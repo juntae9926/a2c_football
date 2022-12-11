@@ -3,7 +3,11 @@ Using Advanced-Actor-Critic on Google Research football environment \
 Environment paper: Kurach et al., Google Research Football: A Novel Reinforcement Learning Environment, AAAI-2020
 (https://arxiv.org/pdf/1907.11180.pdf)
 
-## Pre-requisit on your server
+![football](https://user-images.githubusercontent.com/79918796/206921146-676bbc8e-bb0b-4331-a894-ae704fab02de.gif)
+
+                                                                             
+## Pre-requisit on your server![football]
+
 - If you can deal with docker, use our Dockerfile and set your server easily.
 
 1. Docker build
