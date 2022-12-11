@@ -1,0 +1,22 @@
+version: '2.3'
+  
+services:
+  main:
+    container_name: a2c_football
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    runtime: nvidia
+    restart: always
+    env_file:
+      - "docker-compose-env/main.env"
+    expose:
+      - "8000"
+    ports:
+      - "18100:22"
+      - "18101:6006"
+      - "18102:8000"
+      - "18103:8888"
+    ipc: host
+    stdin_open: true
+    tty: true
