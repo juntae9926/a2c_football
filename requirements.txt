@@ -1,0 +1,2 @@
+kaggle_environments
+reinforcement_learning_keras==0.6.0
