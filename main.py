@@ -4,9 +4,9 @@ import numpy as np
 import gfootball.env as football_env
 from gfootball.env import observation_preprocessing
 
-from .model import *
-from .env import agent
-from .utils import *
+from model import *
+from env import agent
+from utils import *
 
 env = football_env.create_environment(
    env_name="11_vs_11_kaggle",
