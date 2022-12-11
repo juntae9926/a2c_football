@@ -42,6 +42,9 @@ jupyter-notebook
 your ip address:8888
 password : root
 
+5. model for example
+https://drive.google.com/file/d/1KAVM8LDwZHzhU267TbnGd9wU4TuA4WeH/view?usp=share_link
+
 # console
 python main.py
 ```
