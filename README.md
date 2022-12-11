@@ -53,3 +53,5 @@ gdown https://drive.google.com/uc?id=1KAVM8LDwZHzhU267TbnGd9wU4TuA4WeH
 ```
 
 https://drive.google.com/file/d/1KAVM8LDwZHzhU267TbnGd9wU4TuA4WeH/view?usp=share_link
+
+6. Run demo.ipynb jupyter notebook with your trained model
