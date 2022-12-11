@@ -1,6 +1,6 @@
 # a2c_football
-Google Research football environment \
-paper: Kurach et al., Google Research Football: A Novel Reinforcement Learning Environment, AAAI-2020
+Using Advanced-Actor-Critic on Google Research football environment \
+Environment paper: Kurach et al., Google Research Football: A Novel Reinforcement Learning Environment, AAAI-2020
 (https://arxiv.org/pdf/1907.11180.pdf)
 
 ## Pre-requisit on your server
@@ -47,5 +47,9 @@ python main.py
 ```
 
 5. model trained by a2c method
+```
+pip install gdown
+gdown https://drive.google.com/uc?id=1KAVM8LDwZHzhU267TbnGd9wU4TuA4WeH
+```
 
 https://drive.google.com/file/d/1KAVM8LDwZHzhU267TbnGd9wU4TuA4WeH/view?usp=share_link
