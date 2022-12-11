@@ -12,6 +12,10 @@ RUN apt-get update \
     python3-dev \
     git ssh vim
 
+RUN apt-get install cmake build-essential libgl1-mesa-dev libsdl2-dev \
+    libsdl2-image-dev libsdl2-ttf-dev libsdl2-gfx-dev libboost-all-dev \
+    libdirectfb-dev libst-dev mesa-utils xvfb x11vnc
+
 RUN ln -sf /usr/share/zoneinfo/Asia/Seoul /etc/localtime
 RUN ln -s /usr/bin/python3 /usr/bin/python
 RUN echo "root:password" | chpasswd
