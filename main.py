@@ -8,146 +8,118 @@ from model import *
 from env import agent
 from utils import *
 
-env = football_env.create_environment(
-   env_name="11_vs_11_kaggle",
-   representation='raw',
-   stacked=False,
-   logdir='.',
-   write_goal_dumps=False,
-   write_full_episode_dumps=False,
-   render=False,
-   number_of_left_players_agent_controls=1,
-   dump_frequency=0)
+import warnings
+warnings.filterwarnings(action='ignore')
 
-obs = env.reset()
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-created_obs = create_obs(obs[0])
-print(created_obs[0].shape)
+def main():
+    env = football_env.create_environment(
+    env_name="11_vs_11_kaggle",
+    representation='raw',
+    stacked=False,
+    logdir='.',
+    write_goal_dumps=False,
+    write_full_episode_dumps=False,
+    render=False,
+    number_of_right_players_agent_controls=1,
+    number_of_left_players_agent_controls=1,
+    dump_frequency=0)
 
-actor = Actor()
-critic = Critic()
+    actor = ActorNetwork()
+    critic = CriticNetwork()
+    actor_optim = torch.optim.Adam(actor.parameters(), lr=1e-4)
+    critic_optim = torch.optim.Adam(critic.parameters(), lr=5e-4)
+    gamma = 0.99
+    # batch_size = 32
+    epochs = 3000
+    rewards_for_plot = []
 
-env  = football_env.create_environment(
-   env_name="11_vs_11_kaggle",
-   representation='raw',
-   stacked=False,
-   logdir='.',
-   write_goal_dumps=False,
-   write_full_episode_dumps=False,
-   render=False,
-   number_of_left_players_agent_controls=1,
-   number_of_right_players_agent_controls=1,
-   dump_frequency=0)
+    # memory = ReplayBuffer(buffer_size=20000, batch_size=32, device=device)
 
-obs = env.reset()
+    state = env.reset()
 
+    for episode in range(epochs):
+        state = env.reset()
+        states, actions, rewards, next_states, dones = [], [], [] ,[], []
+        done, win = False, False
 
+        while not done:
 
-adam_actor = torch.optim.Adam(actor.parameters(), lr=1e-3)
-adam_critic = torch.optim.Adam(critic.parameters(), lr=1e-3)
-gamma = 0.99
-
-
-step_done = 0
-rewards_for_plot = []
-for steps_done in range(64):
-    states = []
-    actions = []
-    rewards = []
-    next_states = []
-    dones = []
-
-    games_play = 0
-    wins = 0
-    loses = 0
-    obs = env.reset()
-    values = []
-    log_probs = []
-    done = False
-    while not done:
-
-        converted_obs = create_obs(obs[0])
-        actor.eval()
-        prob = actor(torch.as_tensor(converted_obs[0], dtype = torch.float32), torch.as_tensor(converted_obs[1], dtype = torch.float32))
-        actor.train()
-        dist = torch.distributions.Categorical(probs = prob)
-        act = dist.sample()
-
-
-        new_obs, reward, done, _ = env.step([act.detach().data.numpy()[0], (agent(obs[1])).value])
-        if reward[0]==-1:
-            loses+=1
-            done = True
-        if reward[0] == 1:
-            wins+=1
-            done = True
-        if reward[0]==0 and done:
-            reward[0] = 0.25
+            converted_state = create_obs(state[0])
+            with torch.no_grad():
+                actor.eval()
+                prob = actor(torch.as_tensor(converted_state[0], dtype = torch.float32), torch.as_tensor(converted_state[1], dtype = torch.float32))
+                dist = torch.distributions.Categorical(probs = prob)
+                action = dist.sample()
+            next_state, reward, done, _ = env.step([action.detach().data.numpy()[0], agent(state[1]).value])
             
-        last_q_val = 0
-        if done:
-            converted_next_obs = create_obs(new_obs[0])
-            critic.eval()
-            last_q_val = critic(torch.as_tensor(converted_next_obs[0], dtype = torch.float32), torch.as_tensor(converted_next_obs[1], dtype = torch.float32))
-            last_q_val = last_q_val.detach().data.numpy()
-            critic.train()
+            if reward[0] == 0 and done == True:
+                reward[0] = 0.25
+            elif (reward[0] == -1):
+                done = True
+            elif (reward[0] == 1):
+                done = True
+                win == True
 
-        states.append(obs[0])
-        action_arr = np.zeros(19)
-        action_arr[act] = 1
-        actions.append(action_arr)
-        rewards.append(reward[0])
-        next_states.append(new_obs[0])
-        dones.append(1 - int(done))
+            q_value = 0
+            if done:
+                with torch.no_grad():
+                    critic.eval()
+                    converted_next_state = create_obs(next_state[0])
+                    q_value = critic(torch.as_tensor(converted_next_state[0], dtype = torch.float32), torch.as_tensor(converted_next_state[1], dtype = torch.float32))
+                    q_value = q_value.detach().data.numpy()
 
-        obs = new_obs
-        if done:
-            obs = env.reset()
-            break
-            
-    rewards = np.array(rewards)
-    states = np.array(states)
-    actions = np.array(actions)
-    next_states = np.array(next_states)
-    dones = np.array(dones)
-    
-    print('epoch '+ str(steps_done)+ '\t' +'reward_mean ' + str(np.mean(rewards)) + '\t' + 'games_count ' + str(games_play) + '\t' + 'total_wins ' + str(wins) + '\t'+ 'total_loses ' + str(loses))
-    rewards_for_plot.append(np.mean(rewards))
-    #train
-    q_vals = np.zeros((len(rewards), 1))
-    for i in range(len(rewards)-1, 0, -1):
-        last_q_val = rewards[i] + dones[i]*gamma*last_q_val
-        q_vals[i] = last_q_val
+            states.append(state[0])
+            action_ = np.zeros(19)
+            action_[action] = 1
+            actions.append(action_)
+            rewards.append(reward[0])
+            next_states.append(next_state[0])
+            dones.append(1 - int(done))
 
-    action_tensor = torch.as_tensor(actions, dtype=torch.float32)
+            if done:
+                state = env.reset()
+                break
 
-    obs_playgraund_tensor = torch.as_tensor(np.array([create_obs(states[i])[0][0] for i in range(len(rewards))]), dtype=torch.float32)
+            state = next_state
 
-    obs_scalar_tensor = torch.as_tensor(np.array([create_obs(states[i])[1][0] for i in range(len(rewards))]), dtype=torch.float32)
+        states = np.array(states)
+        actions = np.array(actions)
+        rewards = np.array(rewards)
+        next_states = np.array(next_states)
+        dones = np.array(dones)
 
-    val = critic(obs_playgraund_tensor, obs_scalar_tensor)
-    
-    probs = actor(obs_playgraund_tensor, obs_scalar_tensor)
-    
-    advantage = torch.Tensor(q_vals) - val
-    
-    critic_loss = advantage.pow(2).mean()
-    adam_critic.zero_grad()
-    critic_loss.backward()
-    adam_critic.step()
-    
-    
-    actor_loss = (-torch.log(probs)*advantage.detach()).mean()
-    adam_actor.zero_grad()
-    actor_loss.backward(retain_graph=True)
-    adam_actor.step()
-    
-    
+        # Train
+        print(f'episode {str(episode)}' + '\t' + f'reward_mean {str(np.mean(rewards))}'  + '\t' f"win=={win}")
+        rewards_for_plot.append(np.mean(rewards))
+        q_vals = np.zeros((len(rewards), 1))
+        for i in range(len(rewards)-1, 0, -1):
+            q_value = rewards[i] + dones[i]*gamma*q_value
+            q_vals[i] = q_value
 
-#         soft_update(actor, target_actor, 0.8)
-#         soft_update(critic, target_critic, 0.8)
+        obs_playgraund_tensor = torch.as_tensor(np.array([create_obs(states[i])[0][0] for i in range(len(rewards))]), dtype=torch.float32)
+        obs_scalar_tensor = torch.as_tensor(np.array([create_obs(states[i])[1][0] for i in range(len(rewards))]), dtype=torch.float32)
+
+        val = critic(obs_playgraund_tensor, obs_scalar_tensor)
+        probs = actor(obs_playgraund_tensor, obs_scalar_tensor)
+        advantage = torch.Tensor(q_vals) - val
+
+        actor_loss = (-torch.log(probs)*advantage.detach()).mean()
+        actor_optim.zero_grad()
+        actor_loss.backward(retain_graph=True)
+        actor_optim.step()
         
-    if steps_done!=0 and steps_done%50 == 0:
-        torch.save(actor.state_dict(), 'actor.pth')
+        critic_loss = advantage.pow(2).mean()
+        critic_optim.zero_grad()
+        critic_loss.backward()
+        critic_optim.step()
+        
+            
+        if (episode+1)%50 == 0:
+            torch.save(actor.state_dict(), 'actor.pth')
+            torch.save(critic.state_dict(), 'critic.pth')
 
-        torch.save(critic.state_dict(), 'critic.pth')
+if __name__ == "__main__":
+    
+    main()
