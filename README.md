@@ -46,6 +46,6 @@ password : root
 python main.py
 ```
 
-5. model for example
+5. model trained by a2c method
 
 https://drive.google.com/file/d/1KAVM8LDwZHzhU267TbnGd9wU4TuA4WeH/view?usp=share_link
