@@ -35,7 +35,7 @@ pip3 install .
 pip install -r requirements.txt
 ```
 
-3. running code
+4. running code
 ```
 # jupyter notebook
 jupyter-notebook
