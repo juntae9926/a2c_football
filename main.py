@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 import gfootball.env as football_env
-from gfootball.env import observation_preprocessing
+import random
 
 from model import *
 from env import agent
@@ -33,6 +33,8 @@ def main():
     gamma = 0.99
     # batch_size = 32
     epochs = 3000
+    eps = 0.1
+    critic_clip_gradient = 40
     rewards_for_plot = []
 
     # memory = ReplayBuffer(buffer_size=20000, batch_size=32, device=device)
@@ -52,6 +54,8 @@ def main():
                 prob = actor(torch.as_tensor(converted_state[0], dtype = torch.float32), torch.as_tensor(converted_state[1], dtype = torch.float32))
                 dist = torch.distributions.Categorical(probs = prob)
                 action = dist.sample()
+                if random.uniform(0, 1) < eps:
+                    action = torch.as_tensor([np.random.randint(0, 18)])
             next_state, reward, done, _ = env.step([action.detach().data.numpy()[0], agent(state[1]).value])
             
             if reward[0] == 0 and done == True:
@@ -108,17 +112,19 @@ def main():
         actor_loss = (-torch.log(probs)*advantage.detach()).mean()
         actor_optim.zero_grad()
         actor_loss.backward(retain_graph=True)
+        nn.utils.clip_grad_norm_(actor.parameters(), critic_clip_gradient)
         actor_optim.step()
         
         critic_loss = advantage.pow(2).mean()
         critic_optim.zero_grad()
         critic_loss.backward()
+        nn.utils.clip_grad_norm_(critic.parameters(), critic_clip_gradient)
         critic_optim.step()
-        
-            
+         
         if (episode+1)%50 == 0:
-            torch.save(actor.state_dict(), 'actor.pth')
-            torch.save(critic.state_dict(), 'critic.pth')
+            print('model saved')
+            torch.save(actor.state_dict(), './demo/actor.pth')
+            torch.save(critic.state_dict(), './demo/critic.pth')
 
 if __name__ == "__main__":
     
